@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "AccountService.API": {
+      "commandName": "Project",
+      "dotnetRunMessages": "true",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DbContext": "Server=localhost,5432;User Id=postgres;Password=sa123456;Database=account_service",
+        "RedisContext": "firstredistest.redis.cache.windows.net:6380,password=dpoa2e3CNZDcIsLk53kG50Y9J7SkHgo3cAzCaGgOIUk=,ssl=True,abortConnect=False",
+        "JwtSecret": "8f01335c-4f1d-4dcf-9d93-d9abbd319f73",
+        "JwtIssuer": "pnt-issuer",
+        "JwtAudience": "pnt-audience",
+        "CatalogServiceBaseUrl": "http://localhost:5004/",
+        "CustomerServiceBaseUrl": "http://localhost:5015/",
+        "VideoCallServiceBaseUrl": "http://localhost:5010/",
+        "JobServiceBaseUrl": "http://localhost:5009/",
+        "PaymentServiceBaseUrl": "http://localhost:5013",
+        "SFRedirectUrl": "http://localhost:3000/callback",
+        "SfBaseUrl": "https://mckinsey-pentairperks.cs214.force.com",
+        "SfExperiencedSitePath": "poddealer",
+        "SfConnectedAppConsumerKey": "3MVG91Cqi3bGIrUPEBkg9UArp_XYg7V4lb78ytK.PPrBW6GQeIh9c6GpnJAo9wtYt3ucL_sR2ccqSPEvLetat",
+        "SfConnectedAppConsumerSecret": "B98DEACCF8DCFD71A3806BAEA1757EEFA378A1363F49F00500A3FEEFA388B02A",
+        "OtpValidityInDays": "3",
+        "OtpEmailSenderAddress": "ripple@rippleondemand.com",
+        "OtpCoolDownTimeInSeconds": "60",
+        "ServiceBusConnectionString": "Endpoint=sb://testfirstsb.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=OPmpN/gNLiCTT69pM7lPxzzpd9C0bDTb2/Dxt+HyXcQ=",
+        "OtpLength": "6",
+        "SessionValidityInDays": "5",
+        "DstEmailAddress": "care@rippleondemand.com",
+        "SenderEmailAddress": "ripple@rippleondemand.com",
+        "ServiceBusEmailQueue": "email-queue",
+        "ServiceBusDeleteAccountTopic": "account-deletion"
+      }
+    }
+  }
+}
+

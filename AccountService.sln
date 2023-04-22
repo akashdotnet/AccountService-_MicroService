@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.810.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountService.API", "AccountService.API\AccountService.API.csproj", "{380AAEF8-EDB5-4941-A397-FD9A4A367766}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountService.Tests", "AccountService.Tests\AccountService.Tests.csproj", "{B79D906D-9E76-449E-977B-E55E4E6BFF8F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{380AAEF8-EDB5-4941-A397-FD9A4A367766}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{380AAEF8-EDB5-4941-A397-FD9A4A367766}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{380AAEF8-EDB5-4941-A397-FD9A4A367766}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{380AAEF8-EDB5-4941-A397-FD9A4A367766}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B79D906D-9E76-449E-977B-E55E4E6BFF8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B79D906D-9E76-449E-977B-E55E4E6BFF8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B79D906D-9E76-449E-977B-E55E4E6BFF8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B79D906D-9E76-449E-977B-E55E4E6BFF8F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7E5A6722-40A2-439A-8913-92763B3A1BA1}
+	EndGlobalSection
+EndGlobal

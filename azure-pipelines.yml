@@ -1,0 +1,248 @@
+trigger:
+  - develop
+
+resources:
+  - repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: "d02cac5e-fc8c-4cb1-b999-7811ea958a02"
+  imageRepository: "accountservice"
+  containerRegistry: "podartifactregistry.azurecr.io"
+  dockerfilePath: "$(Build.SourcesDirectory)/AccountService.API/Dockerfile"
+  tag: "$(Build.BuildId)"
+
+  # Agent VM image name
+  vmImageName: "ubuntu-latest"
+  poolName: "POD DevOps Agent Pool"
+
+stages:
+  - stage: Build
+    displayName: Build and push stage
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          name: $(poolName)
+        steps:
+          - task: Bash@3
+            displayName: Install dotnet
+            inputs:
+              targetType: "inline"
+              script: |
+                wget https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+                sudo dpkg -i packages-microsoft-prod.deb
+                rm packages-microsoft-prod.deb
+                sudo apt-get update
+                sudo apt-get install -y apt-transport-https
+                sudo apt-get update
+                sudo apt-get install -y dotnet-sdk-6.0
+                sudo apt-get install -y dotnet-runtime-6.0
+          - task: Bash@3
+            displayName: Install docker
+            inputs:
+              targetType: "inline"
+              script: |
+                sudo apt-get install -y ca-certificates curl gnupg lsb-release
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                echo \
+                "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+                $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                sudo apt-get update
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+                sudo chmod 666 /var/run/docker.sock
+          - task: NuGetAuthenticate@0
+            inputs:
+              forceReinstallCredentialProvider: true
+          - task: Bash@3
+            displayName: Clean docker images
+            inputs:
+              targetType: "inline"
+              script: |
+                docker image prune -a -f
+          - task: DotNetCoreCLI@2
+            displayName: Unit test
+            inputs:
+              command: "test"
+              projects: "$(Build.SourcesDirectory)/AccountService.Tests"
+              testRunTitle: "Unit test"
+          - task: Docker@2
+            displayName: Build
+            inputs:
+              command: Build
+              repository: $(imageRepository)
+              arguments: "--build-arg FEED_ACCESSTOKEN=$(VSS_NUGET_ACCESSTOKEN)"
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+          - task: Docker@2
+            displayName: Push an image to container registry
+            inputs:
+              command: push
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+          - task: Bash@3
+            displayName: Clean source code directory
+            inputs:
+              targetType: "inline"
+              script: |
+                ls $(Build.SourcesDirectory)
+                rm -rf $(Build.SourcesDirectory)
+  - stage: Dev
+    dependsOn:
+    - Build
+    jobs:
+    - deployment:
+      displayName: Dev deploy
+      pool:
+        vmImage: $(vmImageName)
+      environment: MS-Dev
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: HelmInstaller@0
+                displayName: Install helm
+                inputs:
+                  helmVersion: '3.3.4'
+                  installKubectl: true
+                  kubectlVersion: '1.21.9'
+              - task: HelmDeploy@0
+                displayName: Deploy account service
+                inputs:
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscription: 'Pentair POD(c2798e15-bf2c-4bee-ac75-8631734d2b55)'
+                  azureResourceGroup: 'pod-dev-spoke'
+                  kubernetesCluster: 'pod-dev-cluster'
+                  namespace: 'dev'
+                  command: 'upgrade'
+                  chartType: 'FilePath'
+                  chartPath: '$(System.DefaultWorkingDirectory)/charts'
+                  chartVersion: '$(Build.BuildId)'
+                  releaseName: 'accountsvc'
+                  valueFile: '$(System.DefaultWorkingDirectory)/charts/values.dev.yaml'
+                  overrideValues: image.tag=$(Build.BuildId)
+  - stage: QA
+    dependsOn:
+    - Dev
+    - Build
+    jobs:
+    - deployment:
+      displayName: QA deploy
+      pool:
+        vmImage: $(vmImageName)
+      environment: MS-QA
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: HelmInstaller@0
+                displayName: Install helm
+                inputs:
+                  helmVersion: '3.3.4'
+                  installKubectl: true
+                  kubectlVersion: '1.21.9'
+              - task: HelmDeploy@0
+                displayName: Deploy account service
+                inputs:
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscription: 'Pentair POD(c2798e15-bf2c-4bee-ac75-8631734d2b55)'
+                  azureResourceGroup: 'pod-qa-spoke'
+                  kubernetesCluster: 'pod-qa-cluster'
+                  namespace: 'qa'
+                  command: 'upgrade'
+                  chartType: 'FilePath'
+                  chartPath: '$(System.DefaultWorkingDirectory)/charts'
+                  chartVersion: '$(Build.BuildId)'
+                  releaseName: 'accountsvc'
+                  valueFile: '$(System.DefaultWorkingDirectory)/charts/values.qa.yaml'
+                  overrideValues: image.tag=$(Build.BuildId)
+  - stage: Staging
+    dependsOn:
+      - Dev
+      - Build
+      - QA
+    jobs:
+      - deployment:
+        displayName: Staging deploy
+        pool:
+          vmImage: $(vmImageName)
+        environment: MS-Stg
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+              - task: HelmInstaller@0
+                displayName: Install helm
+                inputs:
+                  helmVersion: '3.3.4'
+                  installKubectl: true
+                  kubectlVersion: '1.21.9'
+              - task: HelmDeploy@0
+                displayName: Deploy account service
+                inputs:
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscription: 'Pentair POD(c2798e15-bf2c-4bee-ac75-8631734d2b55)'
+                  azureResourceGroup: 'pod-stg-spoke'
+                  kubernetesCluster: 'pod-stg-cluster'
+                  namespace: 'stg'
+                  command: 'upgrade'
+                  chartType: 'FilePath'
+                  chartPath: '$(System.DefaultWorkingDirectory)/charts'
+                  chartVersion: '$(Build.BuildId)'
+                  releaseName: 'accountsvc'
+                  valueFile: '$(System.DefaultWorkingDirectory)/charts/values.stg.yaml'
+                  overrideValues: image.tag=$(Build.BuildId)
+  - stage: Production
+    dependsOn:
+      - Dev
+      - Build
+      - QA
+      - Staging
+    jobs:
+      - deployment:
+        displayName: Production deploy
+        pool:
+          name: $(poolName)
+        environment: MS-Prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+              - task: Bash@3
+                displayName: Install deploy tools - helm and kubectl
+                inputs:
+                  targetType: "inline"
+                  script: |
+                    sudo apt-get install -y ca-certificates curl gnupg lsb-release apt-transport-https
+                    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+                    sudo apt-get update -y
+                    sudo apt-get install helm -y
+                    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+                    sudo apt-get update -y
+                    sudo apt-get install -y kubectl
+              - task: HelmDeploy@0
+                displayName: Deploy account service
+                inputs:
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscription: 'Pentair POD(c2798e15-bf2c-4bee-ac75-8631734d2b55)'
+                  azureResourceGroup: 'pod-prod-spoke'
+                  kubernetesCluster: 'pod-prod-cluster'
+                  namespace: 'prod'
+                  command: 'upgrade'
+                  chartType: 'FilePath'
+                  chartPath: '$(System.DefaultWorkingDirectory)/charts'
+                  chartVersion: '$(Build.BuildId)'
+                  releaseName: 'accountsvc'
+                  valueFile: '$(System.DefaultWorkingDirectory)/charts/values.yaml'
+                  overrideValues: image.tag=$(Build.BuildId)

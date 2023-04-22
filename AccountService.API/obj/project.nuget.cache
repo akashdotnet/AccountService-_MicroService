@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "X2vnsrLzboZF7RJbykRMXjB0vzUZjIKzjZtizOXKZBPVcFSI2A7ZrQTa8VLctugAMtFjAldGA93j7oISTa30Vw==",
+  "success": false,
+  "projectFilePath": "E:\\Akash Personal data\\AccountService\\AccountService\\AccountService.API\\AccountService.API.csproj",
+  "expectedPackageFiles": [],
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Error",
+      "message": "Failed to download package 'Microsoft.CodeAnalysis.CSharp.4.0.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp/4.0.0/microsoft.codeanalysis.csharp.4.0.0.nupkg'.\r\nThe decryption operation failed, see inner exception.\r\n  The specified data could not be decrypted"
+    }
+  ]
+}

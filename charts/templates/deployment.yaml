@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "account-service.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "account-service.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "account-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "account-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "account-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: DbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: acc-svc-db
+            - name: JwtIssuer
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: app-jwt-issuer
+            - name: JwtAudience
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: app-jwt-audience
+            - name: JwtSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: app-jwt-secret
+            - name: RedisContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: app-cache-ssl
+            - name: SfConnectedAppConsumerKey
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: sf-client-id
+            - name: SfConnectedAppConsumerSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: sf-client-secret
+            - name: ServiceBusConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.core }}
+                  key: service-bus-key            
+            - name: CatalogServiceBaseUrl
+              value: http://catalogsvc-catalog-service:80
+            - name: CustomerServiceBaseUrl
+              value: http://customersvc-customer-service:80
+            - name: VideoCallServiceBaseUrl
+              value: http://videocallsvc-video-call-service:80
+            - name: JobServiceBaseUrl
+              value: http://jobsvc-job-service:80
+            - name: PaymentServiceBaseUrl
+              value: http://paymentsvc-payment-service:80
+            - name: OtpValidityInDays
+              value: "{{ .Values.app.OtpValidityInDays }}"
+            - name: OtpCoolDownTimeInSeconds
+              value: "{{ .Values.app.OtpCoolDownTimeInSeconds }}"
+            - name: OtpLength
+              value: "{{ .Values.app.OtpLength }}"
+            - name: SessionValidityInDays
+              value: "{{ .Values.app.SessionValidityInDays }}"
+            - name: OtpEmailSenderAddress
+              value: "{{ .Values.app.OtpEmailSenderAddress }}"
+            - name: DstEmailAddress
+              value: "{{ .Values.app.DstEmailAddress }}"
+            - name: SfBaseUrl
+              value: "{{ .Values.app.SfBaseUrl }}"
+            - name: SFRedirectUrl
+              value: "{{ .Values.app.SFRedirectUrl }}"
+            - name: SfExperiencedSitePath
+              value: "{{ .Values.app.SfExperiencedSitePath }}"
+            - name: ServiceBusEmailQueue
+              value: "{{ .Values.app.ServiceBusEmailQueue }}"
+            - name: ServiceBusDeleteAccountTopic
+              value: "{{ .Values.app.ServiceBusDeleteAccountTopic }}"
+            - name: SenderEmailAddress
+              value: "{{ .Values.app.SenderEmailAddress }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

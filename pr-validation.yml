@@ -1,0 +1,43 @@
+trigger:
+- develop
+
+resources:
+- repo: self
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Test
+  displayName: Test
+  jobs:
+  - job: Build
+    displayName: Validate PR
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: NuGetAuthenticate@0
+      inputs:
+          forceReinstallCredentialProvider: true
+    - task: DotNetCoreCLI@2
+      displayName: Validate restore 
+      inputs:
+        command: 'restore'
+        projects: '$(Build.SourcesDirectory)/AccountService.API'
+        feedsToUse: 'select'
+        vstsFeed: '75d8e0cd-c6f9-4c3f-a2c8-f4438b0aece4/4d123996-af10-471f-8d3d-19f8faaa9c43'
+    
+    - task: DotNetCoreCLI@2
+      displayName: Security scan packages
+      inputs:
+        command: 'custom'
+        projects: '$(Build.SourcesDirectory)/AccountService.API'
+        custom: 'list'
+        arguments: 'package --vulnerable'
+    - task: DotNetCoreCLI@2
+      displayName: Unit test
+      inputs:
+        command: 'test'
+        projects: '$(Build.SourcesDirectory)/AccountService.Tests'
+        testRunTitle: 'Unit test'
+        arguments: '-l "console;verbosity=normal"'
